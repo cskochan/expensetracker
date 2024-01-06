@@ -1,3 +1,5 @@
+from datetime import datetime
+
 def main():
     
     # check for latest csv and read current budget. if no csv, ask for budget
@@ -6,13 +8,18 @@ def main():
         budget = input("How much you currently have: ")
         print("You have $" + budget)
         
+    # Date input. Repeats until input is valid.
+    # Validity is critical because date is used to create and search csv file names
     date_is_valid = False
     while(date_is_valid == False):
         exp_date = input ("Date of Purchase [MM/DD/YYYY]: ")
-        date_is_valid = date_check(exp_date)
+        datetime_obj = date_check(exp_date)
+        if datetime_obj != None:
+            date_is_valid = True
     file_check(exp_date)
+    print(datetime_obj.year)
     
-    # option to add either an expense or an income?
+    # option to add either an expense or an income
     picker = False
     while(picker == False):
         print("""1. Expense\n2. Income""")
@@ -37,12 +44,19 @@ def main():
     # if not, print a summary of expenses breakdown, remaining budget, etc
     # options to include any useful comparisons
         # ex/ last 6 months with the same period last year
+        
 
-def date_check(date) -> bool:
-    # check to make sure that date is valid, and if so, return True
-    return True
+# Checks that date is valid. If so, return Datetime Object. Else return None
+def date_check(date) -> datetime:
+    try:
+        dt_obj = datetime.strptime(date, "%m/%d/%Y")
+        return dt_obj
+    except:
+        print("This date does not exist. Please try again.")
+        return None
+        
 
-def file_check(date):
+def file_check(date) -> None:
     # check to make sure file for that month and year exist, if so, open it
     # if not, create it
     print(date)
