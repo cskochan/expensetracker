@@ -2,31 +2,26 @@ import os
 import re
 from datetime import datetime
 
-
+path = ("./monthly_expense_files/")
 file_list = []
 oldest_date = None
 newest_record = ""
-month_list = []
-year_list = []
+balance = 0
+month_list = sorted([f for f in os.listdir(path) if re.search(r'\d{4}_\d{2}.csv$', f)])
+year_list = sorted([f for f in os.listdir(path) if re.search(r'\d{4}.csv$', f)])
 
 def main():
     # finds most recent expense sheet month for current acct balance info
-    balance = None
-    path = ("./monthly_expense_files/")
-    month_list = sorted([f for f in os.listdir(path) if re.search(r'\d{4}_\d{2}.csv$', f)])
-    year_list = sorted([f for f in os.listdir(path) if re.search(r'\d{4}.csv$', f)])
-    
-    
     try:
         # balance = sorted(files)[-1] along with whatever info we need from
         # the .csv to retrieve the balance
         print(year_list)
         # this is to make sure no new file before this is created
-        oldest_date = get_date(path + year_list[0])
+        oldest_date = get_date(year_list[0])
         print(oldest_date.date())
         #newest_date = get_date(path + year_list[-1])
         # this is to know which file to pull current budget information from
-        balance = get_balance(path + year_list[-1], new=True)
+        balance = get_balance(year_list[-1], new=True)
         print(balance)
     except Exception as e:
         print(e)
@@ -99,7 +94,7 @@ def append_expense(adj_date) -> str:
     type = input("Which type of expense: ")
     amount = amount_input()
     print("Expense added")
-    return str(adj_date.date()) + ", " + name + ", " + type + ", " + str(amount) + ", " + exp_or_in
+    return str(adj_date.date()) + ", " + name + ", " + type + ", " + str(amount)
 
 def append_income(adj_date) -> str:
     name = input("Income source: ")
@@ -107,7 +102,7 @@ def append_income(adj_date) -> str:
     type = input("One time or regular: ")
     amount = amount_input()
     print("Input added")
-    return str(adj_date.date()) + ", " + name + ", " + type + ", " + str(amount) + ", " + exp_or_in
+    return str(adj_date.date()) + ", " + name + ", " + type + ", " + str(amount)
 
         
 # Repeats until input is valid.
@@ -160,13 +155,13 @@ def write_to_file(filename, content):
     print("File updated")
     
 def get_date(filename) -> datetime:
-    with open(filename, mode="r+t", encoding = None) as f:
+    with open(path + filename, mode="r+t", encoding = None) as f:
         date = datetime.strptime(f.readline().split(", ")[0], "%Y-%m-%d")
     return date
 
 
 def get_balance(filename, date = None, new = False) -> float:
-    with open(filename, mode="r+t", encoding = None) as f:
+    with open(path + filename, mode="r+t", encoding = None) as f:
         try:
             if new == True:
                 for line in f:
