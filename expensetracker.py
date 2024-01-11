@@ -6,12 +6,12 @@ path = ("./monthly_expense_files/")
 file_list = []
 oldest_date = None
 newest_record = ""
-balance = 0
 month_list = sorted([f for f in os.listdir(path) if re.search(r'\d{4}_\d{2}.csv$', f)])
 year_list = sorted([f for f in os.listdir(path) if re.search(r'\d{4}.csv$', f)])
 
 def main():
     # finds most recent expense sheet month for current acct balance info
+    balance = 0
     try:
         # balance = sorted(files)[-1] along with whatever info we need from
         # the .csv to retrieve the balance
@@ -21,18 +21,18 @@ def main():
         print(oldest_date.date())
         #newest_date = get_date(path + year_list[-1])
         # this is to know which file to pull current budget information from
-        balance = get_balance(year_list[-1], new=True)
+        balance = get_balance(year_list[-1], current=True)
         print(balance)
     except Exception as e:
         print(e)
         # no file means we ask for balance and create a new file
         print("Looks like you're new here. Lets get you started.")
-        change_date = date_input("new")
+        change_date = date_input(is_balance = True)
         yr_filename = create_yr_filename(change_date)
-        new_balance = "{:.2f}".format(float(input("How much you currently have: ")))
-        write_to_file(yr_filename, str(change_date.date()) + ", " + str(balance) + ", " + str(new_balance))
-        balance = new_balance
+        balance = "{:.2f}".format(float(input("How much you currently have: ")))
+        write_to_file(yr_filename, str(change_date.date()) + ", " + str(balance) + ", " + str(balance))
     print("You have an acct balance of $" + str(balance) + '.')
+    # "{:.2f}".format(balance)  ---> This may or may not work... we'll test later
         
     
     # if date is for a new month, need to write something that collects balance from
@@ -46,7 +46,6 @@ def main():
     while(working == True):
         test = input("New entry? [Y/n]: ")
         if test == "Y" or test == "y":
-            print(test)
             new_entry()
         elif test == "N" or test == "n":
             print("Thank you! See you next time.")
@@ -86,13 +85,13 @@ def new_entry() -> None:
     write_to_file(mo_filename, adjustment_str)
     # write_to_file(yr_filename, balance_str)
 
-        # note: we need the amount for math as well as adding a line to the file,
-        # so just return the string, and ask for the amount after the function call
+
 def append_expense(adj_date) -> str:
     name = input("What you just bought: ")
     print("""1. Food\n2. Shelter\n3. Fun\n4. Misc""")
     type = input("Which type of expense: ")
-    amount = amount_input()
+    amount = amount_input() * -1
+    adjust_balance(adj_date, amount)
     print("Expense added")
     return str(adj_date.date()) + ", " + name + ", " + type + ", " + str(amount)
 
@@ -100,18 +99,20 @@ def append_income(adj_date) -> str:
     name = input("Income source: ")
     print("""1. One time\n2. Regular""")
     type = input("One time or regular: ")
-    amount = amount_input()
+    amount = float(amount_input())
+    #amount = "{:.2f}".format(float(amount_input()))
+    
+    adjust_balance(adj_date, amount)
     print("Input added")
     return str(adj_date.date()) + ", " + name + ", " + type + ", " + str(amount)
 
-        
 # Repeats until input is valid.
 # Validity is critical because date is used to create and search csv file names
-def date_input(new = "") -> datetime:
+def date_input(is_balance = "False") -> datetime:
     exp_datetime = None
     while(exp_datetime == None):
-        if new == "new":
-            exp_date = input("Initial date [MM/DD/YYYY]: ")
+        if is_balance == "True":
+            exp_date = create_yr_date(input("Initial date [MM/DD/YYYY]: "))
         else:
             exp_date = input("Date of Purchase [MM/DD/YYYY]: ")
         exp_datetime = date_check(exp_date)
@@ -121,11 +122,12 @@ def amount_input() -> float:
     amount = None
     while(amount == None):
         try:   
-            amount = float(input("Expense amount: ")) * -1
+            amount = float(input("Expense amount: "))
         except:
             print("Something went wrong. Floats or Ints only please.")
     return amount
 
+# STRING ADJUSTMENTS
 # File name format: YYYY_MM.csv
 def create_mo_filename(exp_datetime) -> str:
     # FIX ME: exp_datetime.month needs to generate two digit numbers below 10
@@ -137,7 +139,31 @@ def create_mo_filename(exp_datetime) -> str:
 def create_yr_filename(exp_datetime) -> str:
     yr_filename = str(exp_datetime.year) + ".csv"
     return yr_filename
+
+    # (str)
+def create_yr_date(bal_date) -> datetime:
+    bal_date = bal_date.year, bal_date.month, 1
+    temp = bal_date.split("/") # we want balance to start at beginning of month
+    bal_date = temp[0] + "/01/" + temp[2]
+    return bal_date
     
+    
+# MATH ADJUSTMENTS
+    # (datetime, float)
+def adjust_balance(date, amount) -> None:
+    filename = create_yr_filename(date)
+    bal_date = datetime(date.year, date.month, 1)
+    balance_on_1st = get_balance(filename, bal_date)
+    new_balance = get_balance(filename, bal_date, current = True) + amount
+    content = str(bal_date.date()) + ", " + str(balance_on_1st) + ", " + str(new_balance)
+    print("Content: " + content)
+    write_to_file(filename, content, bal_date)
+    # adjust the balance for the same month as the amount, so we need that month
+    # also, this should be recursive, because we need to adjust the balance for
+    # every subsequent months balance as well
+    
+    
+# VALIDITY CHECKS
 # Checks that date is valid. If so, return Datetime Object. Else return None
 def date_check(date) -> datetime:
     try:
@@ -147,11 +173,15 @@ def date_check(date) -> datetime:
         print("This date does not exist. Please try again.")
         return None
         
-
-def write_to_file(filename, content):
-    stream = open(path + filename, mode='a', encoding=None)    
-    stream.write(content + "\n")
-    stream.close()
+        
+# FILE READ AND WRITE
+def write_to_file(filename, content, date = None):
+    # this needs to be rewritten so that we can change specific lines of a file
+    # this probably means reading the entire file into a list
+    if date == None:
+        stream = open(path + filename, mode='a', encoding=None)    
+        stream.write(content + "\n")
+        stream.close()
     print("File updated")
     
 def get_date(filename) -> datetime:
@@ -160,22 +190,32 @@ def get_date(filename) -> datetime:
     return date
 
 
-def get_balance(filename, date = None, new = False) -> float:
+def get_balance(filename, date = None, current = False) -> float:
     with open(path + filename, mode="r+t", encoding = None) as f:
         try:
-            if new == True:
+            if current == True and date == None:
                 for line in f:
                     pass
-                acct_balance = "{:.2f}".format(float(line.split(", ")[2]))
+                acct_balance = line.strip().split(", ")[2]
             else:
                 for line in f:
-                    row = f.readline().split(", ")
+                    row = line.strip().split(", ")
+                    print("We get here.")
+                    print(datetime.strptime(row[0], "%Y-%m-%d"))
+                    print(date)
                     if datetime.strptime(row[0], "%Y-%m-%d") == date:
-                        acct_balance = row[2]
-            return acct_balance
+                        if current == True:
+                            print("Row[2]: the current balance" + row[2])
+                            acct_balance = row[2]
+                        else:
+                            print("Row[1]: the balance on the 1st" + row[1])
+                            acct_balance = row[1]    
+                    else:
+                        print("looks like something doesnt match and we'll have to create it")
+            return float(acct_balance)
         except Exception as e:
             print(e)
-            print("Code requires either a Datetime or a New parameter.")                    
+            print("Code requires either a datetime or a current parameter.")                    
             
     
 
