@@ -7,29 +7,11 @@ path = ("./monthly_expense_files/")
 yearList = sorted([f for f in os.listdir(path) if re.search(r'\d{4}.csv$', f)])
 def main():
     balance = {}
-    entry = {}
     balance = welcome(balance)
-    while(True):
-        if entryTest() == True:
-            if isExpense() == True:
-                entry = newExpense(entry)
-            else:
-                entry = newIncome(entry)
-            writeEntry(monthFilename(entry), entry)
-            
-            yearFile = yearFilename(entry)
-            if yearFile not in yearList:
-                balSheetIndex = createNewBalSheet(yearFile)
-                newRow = readLine(balSheetIndex-1, dateToFirst(entry['date']), True)
-            else:
-                balSheetIndex = yearList.index(yearFile)
-                newRow = readLine(balSheetIndex, dateToFirst(entry['date']), True)
-            newRow = updateRow(entry, newRow)
-            writeBalance(balSheetIndex, newRow, entry['amount'])
-        else:
-            break
+    dataEntry()
     balance = readLine(-1, needPrev = True)
-    print("Your current balance is now: $ ", + str("{:.02f}".format(balance['last'])))
+    print("Your current balance is now: $" + str("{:.02f}".format(balance['last'])))
+    dataDisplay()
     print("See you next time!")
 
 def welcome(balance) -> dict:
@@ -43,24 +25,35 @@ def welcome(balance) -> dict:
         balance['date'] = dateToFirst(balance['date'])
         balance['first'] = balance['last'] = float(input("Starting balance: "))
         createNewBalSheet(yearFilename(balance), balance)
-        print(balance)
         writeBalance(0, balance)
     else: # for returning users
         balance = readLine(-1, needPrev = True)
     print("Current balance: $" + str("{:.02f}".format(balance['last'])))
     return balance
 
-def entryTest() -> bool:
+def dataEntry():
+    entry = {}
     while(True):
-        test = input("New entry? [Y/n]: ")
-        if test == "Y" or test == "y" or test == "":
-            return True
-        elif test == "N" or test == "n":
-            return False
+        if isYes(input("New entry? [Y/n]: ")):
+            if isExpense() == True:
+                entry = newExpense(entry)
+            else:
+                entry = newIncome(entry)
+            writeEntry(monthFilename(entry), entry)
+            
+            yearFile = yearFilename(entry)
+            if yearFile not in yearList:
+                balSheetIndex = createNewBalSheet(yearFile)
+                oldRow = readLine(balSheetIndex-1, dateToFirst(entry['date']), True)
+            else:
+                balSheetIndex = yearList.index(yearFile)
+                oldRow = readLine(balSheetIndex, dateToFirst(entry['date']), True)
+            newRow = updateRow(entry, oldRow)
+            writeBalance(balSheetIndex, newRow, entry['amount'])
         else:
-            print("Invalid entry.")
+            break
 
-def isExpense():
+def isExpense() -> bool:
     while(True):
         print("""1. Expense\n2. Income""")
         entry_type = input("Expense or Income [1 or 2]:")
@@ -83,8 +76,10 @@ def newExpense(entry) -> dict:
         except:
             print("Please enter valid date.")
     entry['name'] = input("Entry name: ")
-    print("""1. Food\n2. Shelter\n3. Fun\n4. Misc""")
-    entry['type'] = input("Entry type: ")
+    print("""1. Shelter\n2. Car\n3. Food\n4. Personal\n5. Entertainment\n6. Utilities\n7. Taxes\n8. Misc""")
+    while(True):
+        entry['type'] = input("Entry type: ")
+        if isValidChoice(entry['type'], 1, 8): break
     entry['amount'] = -float(input("Entry amount: "))
     return entry
 
@@ -100,9 +95,91 @@ def newIncome(entry) -> dict:
         except:
             print("Please enter valid date.")
     entry['name'] = input("Income source: ")
-    entry['type'] = "0"
-    entry['amount'] = -float(input("Entry amount: "))
+    entry['type'] = "0" 
+    entry['amount'] = float(input("Entry amount: "))
     return entry
+
+def dataDisplay():
+    while(True):
+        if isYes(input("See data? [Y/n]: ")):
+            print("""1. Year expenses by type\n2. Year income compared to total expenses""")
+            while(True):
+                choice = input("Selection: ")
+                if isValidChoice(choice, 1, 2): break
+            for year in yearList:
+                print(" - " + year[slice(0,4)])
+            while(True):
+                yearSelect = input("Select year: ")
+                if yearSelect + ".csv" in yearList: break
+                else: print("Choice not available.")
+            if choice == "1":
+                option1(yearSelect)
+            elif choice == "2":
+                option2(yearSelect)  
+        else: break
+                
+def option1(year) -> None:
+    monthList = sorted([f for f in os.listdir(path) if re.search(year + r'-\d{2}.csv$', f)])
+    typeTotal = [0.0]*9
+    for filename in monthList:
+        with open(path + filename, 'r', newline='') as f:
+            reader = csv.DictReader(f, quoting=csv.QUOTE_NONNUMERIC)
+            for row in reader:
+                typeTotal[int(row['type'])] += -row['amount']
+    print("\nExpenses for " + year + ":")
+    print("------------------")
+    print("Shelter: $" + str("{:.02f}".format(typeTotal[1])))
+    print("Car: $" + str("{:.02f}".format(typeTotal[2])))
+    print("Food: $" + str("{:.02f}".format(typeTotal[3])))
+    print("Personal: $" + str("{:.02f}".format(typeTotal[4])))
+    print("Entertainment: $" + str("{:.02f}".format(typeTotal[5])))
+    print("Utilities: $" + str("{:.02f}".format(typeTotal[6])))
+    print("Taxes: $" + str("{:.02f}".format(typeTotal[7])))
+    print("Misc: $" + str("{:.02f}".format(typeTotal[8])))
+    print("------------------")
+
+                
+def option2(year) -> None:
+    monthList = sorted([f for f in os.listdir(path) if re.search(year + r'-\d{2}.csv$', f)])
+    income = 0.0
+    expenses = 0.0
+    for filename in monthList:
+        with open(path + filename, 'r', newline='') as f:
+            reader = csv.DictReader(f, quoting=csv.QUOTE_NONNUMERIC)
+            for row in reader:
+                if row['type'] == "0":
+                    income += row['amount']
+                else:
+                    expenses += -row['amount']
+    print("Income: $" + str("{:.02f}".format(income)))
+    print("Expenses: $" + str("{:.02f}".format(expenses)))
+    if income > expenses:
+        print("You saved $" + str("{:.02f}".format(income - expenses)) + " in " + year + ".")
+    elif income < expenses:
+        print("You spent $" + str("{:.02f}".format(expenses - income)) + " more than you earned in " + year + ".")
+    else:
+        print("You spent exactly as much as you earned in " + year + ".")
+                    
+def isYes(test) -> bool:
+    while(True):
+        if test.lower() == "y" or test == "":
+            return True
+        elif test.lower() == "n":
+            return False
+        else:
+            print("Invalid entry.")
+            
+def isValidChoice(choice, firstOption, lastOption):
+        try:
+            choice = int(choice)
+            if firstOption <= choice <= lastOption:
+                return True
+            else:
+                raise
+        except:
+            print("Invalid option.")
+            return False
+        
 
 # sets values for the newRow entry/adjustment.
 def updateRow(entry, oldRow) -> dict:
@@ -127,14 +204,14 @@ def createNewBalSheet(filename, initBal={'date':'xxxx-01-xx'}) -> int:
         writer.writeheader()
         blankRow = {'date':'', 'first':'X', 'last':'X'}
         for i in range(month,13):
-            if initBal['date']=='xxxx-01-xx' and i != month:
+            if initBal['date']!='xxxx-01-xx' and i == month:
                 writer.writerow(initBal)
             else:
                 blankRow['date'] = year + '-' + str("{:02d}".format(i)) + '-01'
                 writer.writerow(blankRow)
     return yearList.index(filename)
 
-def writeBalance(index, list, amount=0):
+def writeBalance(index, list, amount=0) -> None:
     fieldnames = ['date', 'first', 'last']
     for i in range(index, len(yearList)): # repeat for all years index and over
         tempfile = NamedTemporaryFile('w+t', newline='', delete=False)
