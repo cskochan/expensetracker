@@ -116,22 +116,22 @@ def updateRow(entry, oldRow) -> dict:
     return newRow
     
 # returns index of the newly created, empty file
-def createNewBalSheet(filename, initBal={}) -> int:
+def createNewBalSheet(filename, initBal={'date':'xxxx-01-xx'}) -> int:
     yearList.append(filename)
     yearList.sort()
     year = filename[slice(0,4)]
-    month = int(date[5:7]) # used for writing very first balance entry
+    month = int(initBal['date'][5:7]) # used for writing very first balance entry
     with open(path + filename, 'a', newline='') as f:
         fieldnames = ['date', 'first', 'last']
         writer = csv.DictWriter(f, fieldnames = fieldnames, quoting=csv.QUOTE_NONNUMERIC)
         writer.writeheader()
-        blankBal = {'date':'xxxx-01-xx', 'first':'X', 'last':'X'}
+        blankRow = {'date':'', 'first':'X', 'last':'X'}
         for i in range(month,13):
-            if initBal=={}:
-                blankBal['date'] = year + '-' + str("{:02d}".format(i)) + '-01'
-                writer.writerow(blankBal)
-            else:
+            if initBal['date']=='xxxx-01-xx' and i != month:
                 writer.writerow(initBal)
+            else:
+                blankRow['date'] = year + '-' + str("{:02d}".format(i)) + '-01'
+                writer.writerow(blankRow)
     return yearList.index(filename)
 
 def writeBalance(index, list, amount=0):
