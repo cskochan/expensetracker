@@ -31,10 +31,11 @@ def welcome(balance) -> dict:
     print("Current balance: $" + str("{:.02f}".format(balance['last'])))
     return balance
 
+
 def dataEntry():
     entry = {}
     while(True):
-        if isYes(input("New entry? [Y/n]: ")):
+        if isYes("New entry? [Y/n]: "):
             if isExpense() == True:
                 entry = newExpense(entry)
             else:
@@ -99,9 +100,10 @@ def newIncome(entry) -> dict:
     entry['amount'] = float(input("Entry amount: "))
     return entry
 
+
 def dataDisplay():
     while(True):
-        if isYes(input("See data? [Y/n]: ")):
+        if isYes("See data? [Y/n]: "):
             print("""1. Year expenses by type\n2. Year income compared to total expenses""")
             while(True):
                 choice = input("Selection: ")
@@ -138,7 +140,6 @@ def option1(year) -> None:
     print("Misc: $" + str("{:.02f}".format(typeTotal[8])))
     print("------------------")
 
-                
 def option2(year) -> None:
     monthList = sorted([f for f in os.listdir(path) if re.search(year + r'-\d{2}.csv$', f)])
     income = 0.0
@@ -160,8 +161,9 @@ def option2(year) -> None:
     else:
         print("You spent exactly as much as you earned in " + year + ".")
                     
-def isYes(test) -> bool:
+def isYes(prompt) -> bool:
     while(True):
+        test = input(prompt)
         if test.lower() == "y" or test == "":
             return True
         elif test.lower() == "n":
