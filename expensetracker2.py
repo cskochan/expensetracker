@@ -18,10 +18,7 @@ def welcome(balance) -> dict:
     today = datetime.now()
     if len(yearList) == 0: # for new users
         print("New user.")
-        while(True):
-            balance['date'] = dateTest(input("Starting date [MM/DD/YYYY]: "))
-            if balance['date'] != None:
-                break
+        balance['date'] = dateTest("Starting date [MM/DD/YYYY]: ")
         balance['date'] = dateToFirst(balance['date'])
         balance['first'] = balance['last'] = float(input("Starting balance: "))
         createNewBalSheet(yearFilename(balance), balance)
@@ -36,7 +33,9 @@ def dataEntry():
     entry = {}
     while(True):
         if isYes("New entry? [Y/n]: "):
-            if isExpense() == True:
+            print("""1. Expense\n2. Income""")
+            choice = isValidChoice("Expense of Income: ", 1, 2)
+            if choice == 1:
                 entry = newExpense(entry)
             else:
                 entry = newIncome(entry)
@@ -54,47 +53,16 @@ def dataEntry():
         else:
             break
 
-def isExpense() -> bool:
-    while(True):
-        print("""1. Expense\n2. Income""")
-        entry_type = input("Expense or Income [1 or 2]:")
-        if entry_type == "1":
-            return True
-        elif entry_type == "2":
-            return False
-        else:
-            print("Invalid entry.")
-
 def newExpense(entry) -> dict:
-    while(True):
-        try:
-            entry['date'] = dateTest(input("Entry date [MM/DD/YYYY]: "))
-            earliestBal = readLine(0, "earliest")
-            if entry['date'] < earliestBal['date']:
-                print("Date precedes date of initial balance.")
-                raise
-            break
-        except:
-            print("Please enter valid date.")
+    entry['date'] = dateTest("Entry date [MM/DD/YYYY]: ")
     entry['name'] = input("Entry name: ")
     print("""1. Shelter\n2. Car\n3. Food\n4. Personal\n5. Entertainment\n6. Utilities\n7. Taxes\n8. Misc""")
-    while(True):
-        entry['type'] = input("Entry type: ")
-        if isValidChoice(entry['type'], 1, 8): break
+    entry['type'] = isValidChoice("Entry type: ", 1, 8)
     entry['amount'] = -float(input("Entry amount: "))
     return entry
 
 def newIncome(entry) -> dict:
-    while(True):
-        try:
-            entry['date'] = dateTest(input("Entry date [MM/DD/YYY]: "))
-            earliestBal = readLine(0, "earliest")
-            if entry['date'] < earliestBal['date']:
-                print("Date precedes date of initial balance.")
-                raise
-            break
-        except:
-            print("Please enter valid date.")
+    entry['date'] = dateTest("Entry date [MM/DD/YYYY]: ")
     entry['name'] = input("Income source: ")
     entry['type'] = "0" 
     entry['amount'] = float(input("Entry amount: "))
@@ -105,9 +73,7 @@ def dataDisplay():
     while(True):
         if isYes("See data? [Y/n]: "):
             print("""1. Year expenses by type\n2. Year income compared to total expenses""")
-            while(True):
-                choice = input("Selection: ")
-                if isValidChoice(choice, 1, 2): break
+            choice = isValidChoice("Selection: ", 1, 2)
             for year in yearList:
                 print(" - " + year[slice(0,4)])
             while(True):
@@ -171,16 +137,17 @@ def isYes(prompt) -> bool:
         else:
             print("Invalid entry.")
             
-def isValidChoice(choice, firstOption, lastOption):
+def isValidChoice(prompt, firstOption, lastOption):
+    while(True):
+        choice = input(prompt)
         try:
             choice = int(choice)
             if firstOption <= choice <= lastOption:
-                return True
+                return choice
             else:
                 raise
         except:
             print("Invalid option.")
-            return False
         
 
 # sets values for the newRow entry/adjustment.
@@ -258,12 +225,21 @@ def readLine(index, date = "XXXX-XX-XX", needPrev = False) -> dict:
             latestRow = readLine(index - 1, date, needPrev)
         return latestRow # for returning last used row of file
                 
-def dateTest(date = None) -> str:
-    try:
-        dtObject = datetime.strptime(date, "%m/%d/%Y")
-        return str(dtObject.date())
-    except:
-        print("Please enter valid date.")
+def dateTest(prompt) -> str:
+    while(True):
+        date = input(prompt)
+        try:
+            dtObject = datetime.strptime(date, "%m/%d/%Y")
+            if len(yearList) != 0:
+                earliestBal = readLine(0, "earliest")
+                strDate = str(dtObject.date())
+                if strDate < earliestBal['date']:
+                    print("Date precedes date of initial balance.")
+                    raise
+            return strDate
+        except:
+            print("Please enter valid date.")
+        
         
 # Entry dates need to be set to first of month to be compatible with balance sheet
 def dateToFirst(date) -> str:
