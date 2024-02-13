@@ -50,8 +50,7 @@ def dataEntry():
                 oldRow = readLine(balSheetIndex, dateToFirst(entry['date']), True)
             newRow = updateRow(entry, oldRow)
             writeBalance(balSheetIndex, newRow, entry['amount'])
-        else:
-            break
+        else: break
 
 def newExpense(entry) -> dict:
     entry['date'] = dateTest("Entry date [MM/DD/YYYY]: ")
@@ -137,7 +136,7 @@ def isYes(prompt) -> bool:
         else:
             print("Invalid entry.")
             
-def isValidChoice(prompt, firstOption, lastOption):
+def isValidChoice(prompt, firstOption, lastOption) -> int:
     while(True):
         choice = input(prompt)
         try:
