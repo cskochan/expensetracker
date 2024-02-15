@@ -3,7 +3,7 @@ from tempfile import NamedTemporaryFile
 import shutil, csv
 from datetime import date, datetime
 
-path = ("./monthly_expense_files/")
+path = ("./expense_files/")
 yearList = sorted([f for f in os.listdir(path) if re.search(r'\d{4}.csv$', f)])
 def main():
     balance = {}
@@ -229,9 +229,9 @@ def dateTest(prompt) -> str:
         date = input(prompt)
         try:
             dtObject = datetime.strptime(date, "%m/%d/%Y")
+            strDate = str(dtObject.date())
             if len(yearList) != 0:
                 earliestBal = readLine(0, "earliest")
-                strDate = str(dtObject.date())
                 if strDate < earliestBal['date']:
                     print("Date precedes date of initial balance.")
                     raise
