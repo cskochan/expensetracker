@@ -4,6 +4,7 @@ import shutil, csv
 from datetime import date, datetime
 
 path = ("./expense_files/")
+if not os.path.isdir(path): os.mkdir(path)
 yearList = sorted([f for f in os.listdir(path) if re.search(r'\d{4}.csv$', f)])
 def main():
     balance = {}
