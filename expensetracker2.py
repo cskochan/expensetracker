@@ -35,7 +35,7 @@ def dataEntry():
     while(True):
         if isYes("New entry? [Y/n]: "):
             print("""1. Expense\n2. Income""")
-            choice = isValidChoice("Expense of Income: ", 1, 2)
+            choice = isValidChoice("Expense or Income: ", 1, 2)
             if choice == 1:
                 entry = newExpense(entry)
             else:
